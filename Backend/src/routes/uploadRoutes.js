@@ -1,22 +1,3 @@
-// import express from "express";
-// import upload from "../middleware/uploadMiddleware.js";
-// import uploadController from "../controllers/uploadController.js";
-
-// const router = express.Router();
-
-// router.post(
-//   "/media",
-//   upload.fields([
-//     { name: "images", maxCount: 10 },
-//     { name: "video", maxCount: 1 },
-//   ]),
-//   uploadController.uploadMedia
-// );
-
-// export default router;
-
-
-
 import express from "express";
 import multer from "multer";
 import upload from "../middleware/uploadMiddleware.js";
