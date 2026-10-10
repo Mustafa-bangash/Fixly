@@ -1,0 +1,9 @@
+.foot { border-top: 1px solid var(--border); background: var(--white); margin-top: 50px; padding: 28px 20px; font-size: 15px; }
+.foot-grid { max-width: 1240px; margin: auto; display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 20px; }
+.foot-grid a { display: block; padding: 5px 0; color: var(--muted); text-decoration: none; }
+.foot-logo { font-weight: 700; font-size: 22px; color: var(--navy); letter-spacing: 1px; }
+.foot-bottom { max-width: 1240px; margin: 20px auto 0; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 8px 0 4px; }
+.seg button { border: 0; background: var(--white); padding: 8px 18px; font: 600 15px Inter, Arial, sans-serif; color: var(--muted); cursor: pointer; }
+.seg button.on { background: var(--blue-light); color: var(--blue); }
+@media (max-width: 700px) { .foot-grid { grid-template-columns: 1fr 1fr; } }

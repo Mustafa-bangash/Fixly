@@ -1,0 +1,85 @@
+/* Hero */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 36px 0 10px; }
+.hero-text { font-size: 20px; }
+.hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* How Fixly works */
+.grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; }
+.num { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-light); color: var(--blue);
+  display: grid; place-items: center; font-weight: 700; margin: 12px 0 8px; }
+.video-box {
+  margin-top: 24px;
+  max-width: 1100px;
+  margin-inline: auto;
+}
+
+.journey-header {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.journey-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.journey-card {
+  background: #fff;
+  border: 1px solid rgba(34, 52, 87, 0.08);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(22, 39, 66, 0.08);
+}
+
+.journey-card .photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.journey-card span {
+  display: block;
+  padding: 10px 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .journey-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Services */
+#services { scroll-margin-top: 80px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.service { background: none; border: 0; padding: 0; text-align: start; cursor: pointer;
+  font: 600 17px Inter, Arial, sans-serif; color: var(--navy); }
+.service b { display: block; margin-top: 8px; }
+
+/* Why customers can trust Fixly */
+.trust { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; }
+.check { padding: 6px 0; font-size: 17px; }
+.check::before { content: '✓ '; color: var(--blue); font-weight: 700; }
+
+/* Blue call-to-action banner */
+.cta { background: var(--navy); color: #fff; border-radius: 14px; padding: 44px; display: grid;
+  grid-template-columns: 1.2fr 1fr; gap: 36px; align-items: center; margin-top: 40px; }
+.cta h2 { color: #fff; margin: 0; }
+.cta-button { max-width: 300px; display: inline-block; width: auto; padding-inline: 28px; margin-inline-end: 10px; }
+
+.provider-line { margin-top: 24px; }
+
+@media (max-width: 900px) {
+  .hero, .trust, .cta { grid-template-columns: 1fr; }
+  .grid-5, .grid-4 { grid-template-columns: 1fr 1fr; }
+}
