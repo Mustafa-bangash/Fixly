@@ -1,38 +1,32 @@
-import { useLanguage } from '../hooks/useLanguage.js';
 import { FOOTER_COLUMNS } from '../components/landing/landingContent.js';
 import { ROUTES } from '../utils/routes.js';
-import './Footer.css';
-
-// Turns a footer link definition into a real address.
+// gives the address for a footer link, Services just scrolls to the services section
 function linkTo(link) {
   if (link.to === 'how') return ROUTES.how;
-  if (link.to === 'services') return '#services'; // scrolls to the Services section
+  if (link.to === 'services') return '#services';
   return ROUTES.info(link.slug);
 }
 
 export default function Footer() {
-  const { lang, setLang } = useLanguage();
   return (
-    <footer className="foot">
-      <div className="foot-grid">
+    <footer className="mt-[50px] border-t border-line bg-white px-5 py-7 text-[15px]">
+      <div className="mx-auto grid max-w-[1240px] grid-cols-2 gap-5 phone:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <b className="foot-logo">FIXLY</b>
-          <p className="muted">Making home repairs easier.</p>
-          <div className="seg" role="group" aria-label="Language">
-            <button className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')}>English</button>
-            <button className={lang === 'ur' ? 'on' : ''} onClick={() => setLang('ur')}>اردو</button>
-          </div>
+          <b className="text-[22px] font-bold tracking-[1px] text-navy">FIXLY</b>
+          <p className="mb-[14px] text-base text-muted">Making home repairs easier.</p>
         </div>
-        {FOOTER_COLUMNS.map((col) => (
-          <div key={col.heading}>
-            <b>{col.heading}</b>
-            {col.links.map((link) => (
-              <a key={link.label} href={linkTo(link)}>{link.label}</a>
+        {FOOTER_COLUMNS.map((column) => (
+          <div key={column.heading}>
+            <b className="font-bold">{column.heading}</b>
+            {column.links.map((link) => (
+              <a key={link.label} className="block py-[5px] text-muted" href={linkTo(link)}>
+                {link.label}
+              </a>
             ))}
           </div>
         ))}
       </div>
-      <div className="foot-bottom">© Fixly · Islamabad &amp; Rawalpindi, Pakistan</div>
+      <div className="mx-auto mt-5 max-w-[1240px] text-muted">© Fixly · Islamabad &amp; Rawalpindi, Pakistan</div>
     </footer>
   );
 }

@@ -1,4 +1,5 @@
-
+// all the text and images of the landing page are kept in this file
+// to add a real image: put it in src/assets/images, import it here and use it in the image field
 
 import landingImage from '../../assets/images/landing image.jpeg';
 import landingVideo from '../../assets/images/Video.mp4';

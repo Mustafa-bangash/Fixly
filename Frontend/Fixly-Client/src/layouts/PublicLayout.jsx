@@ -1,15 +1,14 @@
 import OfflineBanner from '../components/common/OfflineBanner.jsx';
 import Header from './Header.jsx';
 import Footer from './Footer.jsx';
-
-// Page frame for visitors who are not signed in: offline bar, header, page content, footer.
+// frame for pages that visitors see before login: offline bar, header, page and footer
 export default function PublicLayout({ children }) {
   return (
     <>
       <OfflineBanner />
-      <div className="app">
+      <div className="flex min-h-screen flex-col">
         <Header />
-        <main>{children}</main>
+        <main className="mx-auto w-full max-w-[1240px] flex-1 px-5 pt-7 pb-[120px]">{children}</main>
         <Footer />
       </div>
     </>

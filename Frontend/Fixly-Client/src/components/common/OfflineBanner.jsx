@@ -1,25 +1,32 @@
-import { useEffect, useState } from 'react';
-import './OfflineBanner.css';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { selectIsOnline, setOnline } from '../../store/uiSlice.js';
+// read the online status from the redux store
 
-// Red bar at the top of the page when the internet connection is lost (same as the prototype).
+
+
 export default function OfflineBanner() {
-  const [online, setOnline] = useState(navigator.onLine);
-
+  const dispatch = useDispatch();
+  const isOnline = useSelector(selectIsOnline);
+// listen to the browser online / offline events and save them in redux
   useEffect(() => {
-    const goOnline = () => setOnline(true);
-    const goOffline = () => setOnline(false);
-    window.addEventListener('online', goOnline);
-    window.addEventListener('offline', goOffline);
-    return () => {
-      window.removeEventListener('online', goOnline);
-      window.removeEventListener('offline', goOffline);
-    };
-  }, []);
+    const handleOnline = () => dispatch(setOnline(true));
+    const handleOffline = () => dispatch(setOnline(false));
 
-  if (online) return null;
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+// remove the listeners when the banner is removed so they do not pile up
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [dispatch]);
+// nothing to show when the internet is working
+  if (isOnline) return null;
+
   return (
-    <div className="offline-banner" role="alert">
-      You're offline. Please check your internet connection.
+    <div className="bg-danger p-2 text-center text-base text-white" role="alert">
+      You&apos;re offline. Please check your internet connection.
     </div>
   );
 }

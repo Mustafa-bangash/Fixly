@@ -1,20 +1,26 @@
 import ImagePlaceholder from '../common/ImagePlaceholder.jsx';
 import { SERVICES } from './landingContent.js';
 import { ROUTES } from '../../utils/routes.js';
-import './Landing.css';
-
+//the 8 service tiles
 export default function Services() {
-  // Later: this will start a request for the chosen service. For now visitors are sent to sign up.
-  const startService = () => { window.location.href = ROUTES.signup; };
+  //for now every service tile sends the visitor to the sign up page
+  const startService = () => {
+    window.location.href = ROUTES.signup;
+  };
 
   return (
     <section>
-      <h2 id="services">Services</h2>
-      <div className="grid-4">
-        {SERVICES.map((s) => (
-          <button key={s.code} type="button" className="service" onClick={startService}>
-            <ImagePlaceholder src={s.image} alt={s.imageAlt} ratio="3/2" />
-            <b>{s.label}</b>
+      <h2 id="services" className="mt-7 mb-2 scroll-mt-20 text-[20px] font-bold text-navy">Services</h2>
+      <div className="grid grid-cols-2 gap-5 tablet:grid-cols-4">
+        {SERVICES.map((service) => (
+          <button
+            key={service.code}
+            type="button"
+            className="cursor-pointer border-0 bg-transparent p-0 text-start text-[17px] font-semibold text-navy"
+            onClick={startService}
+          >
+            <ImagePlaceholder src={service.image} alt={service.imageAlt} ratio="3/2" />
+            <b className="mt-2 block font-bold">{service.label}</b>
           </button>
         ))}
       </div>

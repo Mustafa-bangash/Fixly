@@ -1,48 +1,17 @@
-import './ImagePlaceholder.css';
-
-// Shows a real picture when `src` is given. Otherwise it shows the dashed placeholder box
-// from the prototype (small label + description of the picture that should go here).
-export default function ImagePlaceholder({
-  src,
-  alt,
-  ratio = '4/3',
-  label = 'Image placeholder',
-  isVideo = false,
-  autoPlay = false,
-  muted = false,
-  loop = false,
-  controls = false,
-  playsInline = false,
-  videoRef,
-}) {
-  const hasVideoSource = isVideo || (typeof src === 'string' && /\.(mp4|webm|ogg|mov)$/i.test(src));
-
-  if (src && hasVideoSource) {
-    return (
-      <video
-        ref={videoRef}
-        className={isVideo ? 'photo video' : 'photo'}
-        src={src}
-        controls={controls}
-        autoPlay={autoPlay}
-        muted={muted}
-        loop={loop}
-        playsInline={playsInline}
-        preload="metadata"
-        style={{ aspectRatio: ratio }}
-        aria-label={alt}
-      >
-        Your browser does not support the video tag.
-      </video>
-    );
-  }
-
+export default function ImagePlaceholder({ src, alt, ratio = '4/3', label = 'Image placeholder' }) {
   if (src) {
-    return <img className="photo" src={src} alt={alt} style={{ aspectRatio: ratio }} />;
+    // show the real image if we have one, otherwise the dashed placeholder box
+    return <img className="block w-full rounded-xl object-cover" src={src} alt={alt} style={{ aspectRatio: ratio }} />;
   }
+
   return (
-    <div className="placeholder" style={{ aspectRatio: ratio }} role="img" aria-label={alt}>
-      <b>{label}</b>
+    <div
+      className="flex flex-col items-center justify-center gap-1 rounded-xl border-[1.5px] border-dashed border-dash-line bg-navy-light p-4 text-center text-[14px] text-muted"
+      style={{ aspectRatio: ratio }}
+      role="img"
+      aria-label={alt}
+    >
+      <b className="text-[12px] font-bold uppercase tracking-[0.6px] text-navy">{label}</b>
       <span>{alt}</span>
     </div>
   );

@@ -1,18 +1,16 @@
-import { useLanguage } from '../hooks/useLanguage.js';
 import { ROUTES } from '../utils/routes.js';
-import './Header.css';
+// same style for the three links on the right side of the header
+const navLink = 'rounded-lg px-[14px] py-[10px] text-base text-muted';
 
-// Header for visitors who are not signed in (as in the prototype).
 export default function Header() {
-  const { t } = useLanguage();
   return (
-    <header className="site-header">
-      <div className="bar">
-        <a className="logo" href={ROUTES.home}>FIXLY</a>
-        <span className="spacer" />
-        <a className="nav-item" href={ROUTES.how}>How Fixly Works</a>
-        <a className="nav-item" href={ROUTES.login}>{t('Sign In')}</a>
-        <a className="nav-item primary" href={ROUTES.signup}>{t('Get Started')}</a>
+    <header className="sticky top-0 z-[5] border-b border-line bg-white">
+      <div className="mx-auto flex max-w-[1240px] items-center gap-[6px] px-5 py-3 phone:gap-5">
+        <a className="text-[22px] font-bold tracking-[1px] text-navy" href={ROUTES.home}>FIXLY</a>
+        <span className="flex-1 phone:flex-none" />
+        <a className={navLink} href={ROUTES.how}>How Fixly Works</a>
+        <a className={navLink} href={ROUTES.login}>Sign In</a>
+        <a className={`${navLink} bg-brand text-white`} href={ROUTES.signup}>Get Started</a>
       </div>
     </header>
   );
