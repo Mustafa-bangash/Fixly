@@ -4,14 +4,15 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { Server } from "socket.io";
 import uploadRoutes from "./routes/uploadRoutes.js";
-
+import authRoutes from "./routes/authRoutes.js";
 const app = express();
 
-app.use(cors());
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/upload", uploadRoutes);
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;
 
