@@ -1,0 +1,468 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  role         Role
+  fullName     String
+  email        String   @unique
+  phone        String   @unique
+  passwordHash String
+  isVerified   Boolean  @default(false)
+  profilePhotoUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+   customerProfile CustomerProfile?
+  providerProfile ProviderProfile?
+  repairRequests RepairRequest[]
+  jobs Job[]
+  messages Message[]
+  ratingsGiven Rating[]
+  repairHistory RepairHistory[]
+  warrantyClaims WarrantyClaim[]
+ repeatProblemFlags RepeatProblemFlag[]
+  maintenanceReminders MaintenanceReminder[]
+   notifications Notification[]
+   disputesRaised Dispute[] 
+   otpCodes OtpCode[]
+}
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+model CustomerProfile {
+  userId           String  @id
+  user             User    @relation(fields: [userId], references: [id])
+  savedAddressText String?
+  savedLatitude    Float?
+  savedLongitude   Float?
+}
+
+model ProviderProfile {
+  userId             String  @id
+  user               User    @relation(fields: [userId], references: [id])
+  bio                String?
+  workingRadiusKm    Int?
+  isVerified         Boolean @default(false)
+  reliabilityScore   Float   @default(0)
+  completedJobsCount Int     @default(0)
+  cancelledJobsCount Int     @default(0)
+  baseLatitude       Float?
+  baseLongitude      Float?
+
+  skills ProviderSkill[]
+  bids Bid[]
+  jobs Job[]
+  ratingsReceived Rating[]
+  broadcasts RequestBroadcast[]
+}
+
+model ServiceCategory {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  defaultReminderIntervalMonths Int?
+  peakSeasonStartMonth          Int?
+
+  providerSkills ProviderSkill[]
+  repairRequests RepairRequest[]
+  repairHistoryEntries RepairHistory[]
+  repeatProblemRecommendations RepeatProblemRecommendation[]
+  repeatProblemFlags RepeatProblemFlag[]
+   maintenanceReminders MaintenanceReminder[]
+   
+}
+
+model ProviderSkill {
+  id                 String   @id @default(uuid())
+  providerId         String
+  provider           ProviderProfile @relation(fields: [providerId], references: [userId])
+  categoryId         String
+  category           ServiceCategory @relation(fields: [categoryId], references: [id])
+  verificationStatus VerificationStatus @default(PENDING)
+  verificationDocUrl String?
+  reviewedBy         String?
+  reviewedAt         DateTime?
+
+  @@unique([providerId, categoryId])
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
+model RepairRequest {
+  id            String        @id @default(uuid())
+  customerId    String
+  customer      User          @relation(fields: [customerId], references: [id])
+  categoryId    String
+  category      ServiceCategory @relation(fields: [categoryId], references: [id])
+  description   String
+  isComplexJob  Boolean       @default(false)
+  isEmergency   Boolean       @default(false)
+  emergencyType EmergencyType?
+  latitude      Float
+  longitude     Float
+  status        RequestStatus @default(OPEN)
+  createdAt     DateTime      @default(now())
+
+  media RequestMedia[]
+  bids  Bid[]
+  job   Job?
+  broadcasts RequestBroadcast[]
+
+  @@index([status, categoryId])
+  @@index([customerId])
+  
+}
+
+enum EmergencyType {
+  GAS_LEAK
+  ELECTRICAL_SPARK
+  FLOODING
+}
+
+enum RequestStatus {
+  OPEN
+  BIDDING_CLOSED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model RequestMedia {
+  id        String     @id @default(uuid())
+  requestId String
+  request   RepairRequest @relation(fields: [requestId], references: [id])
+  mediaType MediaType
+  fileUrl   String
+  stage     MediaStage
+  createdAt DateTime   @default(now())
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+}
+
+enum MediaStage {
+  BEFORE
+  AFTER
+}
+
+
+model Bid {
+  id         String   @id @default(uuid())
+  requestId  String
+  request    RepairRequest @relation(fields: [requestId], references: [id])
+  providerId String
+  provider   ProviderProfile @relation(fields: [providerId], references: [userId])
+  price      Decimal
+  etaMinutes Int
+  note       String?
+  status     BidStatus @default(PENDING)
+  createdAt  DateTime  @default(now())
+
+  job Job?
+
+  @@index([requestId])
+  @@index([providerId]) 
+}
+
+enum BidStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model Job {
+  id            String    @id @default(uuid())
+  requestId     String    @unique
+  request       RepairRequest @relation(fields: [requestId], references: [id])
+  acceptedBidId String    @unique
+  acceptedBid   Bid       @relation(fields: [acceptedBidId], references: [id])
+  customerId    String
+  customer      User      @relation(fields: [customerId], references: [id])
+  providerId    String
+  provider      ProviderProfile @relation(fields: [providerId], references: [userId])
+  status        JobStatus @default(CONFIRMED)
+  confirmedAt   DateTime  @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  followUpSentAt DateTime? 
+  followUpResolved Boolean?
+
+  locationPings ProviderLocationPing[]
+  messages      Message[]
+  rating        Rating?
+  repairHistory RepairHistory?
+  warranty      Warranty?
+  payment       Payment?
+  disputes      Dispute[]
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+}
+
+enum JobStatus {
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  DISPUTED
+}
+
+model ProviderLocationPing {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id])
+  latitude   Float
+  longitude  Float
+  recordedAt DateTime @default(now())
+
+  @@index([jobId, recordedAt])
+}
+
+model Message {
+  id       String   @id @default(uuid())
+  jobId    String
+  job      Job      @relation(fields: [jobId], references: [id])
+  senderId String
+  sender   User     @relation(fields: [senderId], references: [id])
+  content  String
+  sentAt   DateTime @default(now())
+
+  @@index([jobId, sentAt])
+
+}
+
+model Rating {
+  id            String   @id @default(uuid())
+  jobId         String   @unique
+  job           Job      @relation(fields: [jobId], references: [id])
+  customerId    String
+  customer      User     @relation(fields: [customerId], references: [id])
+  providerId    String
+  provider      ProviderProfile @relation(fields: [providerId], references: [userId])
+  stars         Int
+  writtenReview String?
+  createdAt     DateTime @default(now())
+}
+
+model RepairHistory {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id])
+  jobId      String   @unique
+  job        Job      @relation(fields: [jobId], references: [id])
+  categoryId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id])
+  summary    String?
+  createdAt  DateTime @default(now())
+}
+
+model Warranty {
+  id        String   @id @default(uuid())
+  jobId     String   @unique
+  job       Job      @relation(fields: [jobId], references: [id])
+  issuedAt  DateTime @default(now())
+  expiresAt DateTime
+  status    WarrantyStatus @default(ACTIVE)
+
+  claims WarrantyClaim[]
+}
+
+enum WarrantyStatus {
+  ACTIVE
+  EXPIRED
+  CLAIMED
+}
+
+model WarrantyClaim {
+  id          String   @id @default(uuid())
+  warrantyId  String
+  warranty    Warranty @relation(fields: [warrantyId], references: [id])
+  customerId  String
+  customer    User     @relation(fields: [customerId], references: [id])
+  description String
+  status      ClaimStatus @default(SUBMITTED)
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+}
+
+enum ClaimStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model RepeatProblemRecommendation {
+  id                 String   @id @default(uuid())
+  categoryId         String
+  category           ServiceCategory @relation(fields: [categoryId], references: [id])
+  patternDescription String
+  recommendationText String
+}
+
+model RepeatProblemFlag {
+  id                  String   @id @default(uuid())
+  customerId          String
+  customer            User     @relation(fields: [customerId], references: [id])
+  categoryId          String
+  category            ServiceCategory @relation(fields: [categoryId], references: [id])
+  occurrenceCount     Int      @default(1)
+  lastFlaggedAt       DateTime @default(now())
+  recommendationShown String?
+}
+
+model MaintenanceReminder {
+  id               String   @id @default(uuid())
+  customerId       String
+  customer         User     @relation(fields: [customerId], references: [id])
+  categoryId       String
+  category         ServiceCategory @relation(fields: [categoryId], references: [id])
+  nextReminderDate DateTime
+  lastServiceDate  DateTime?
+  status           ReminderStatus @default(PENDING)
+}
+
+enum ReminderStatus {
+  PENDING
+  DISMISSED
+  ACTIONED
+}
+
+model Payment {
+  id             String   @id @default(uuid())
+  jobId          String   @unique
+  job            Job      @relation(fields: [jobId], references: [id])
+  amount         Decimal
+  method         PaymentMethod
+  walletProvider WalletProvider?
+  status         PaymentStatus @default(PENDING)
+  paidAt         DateTime?
+
+  commission Commission?
+}
+
+enum PaymentMethod {
+  CASH
+  WALLET
+}
+
+enum WalletProvider {
+  JAZZCASH
+  EASYPAISA
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  DISPUTED
+}
+
+model Commission {
+  id                   String  @id @default(uuid())
+  paymentId            String  @unique
+  payment              Payment @relation(fields: [paymentId], references: [id])
+  commissionRate       Decimal
+  commissionAmount     Decimal
+  providerPayoutAmount Decimal
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      NotificationType
+  payload   Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+enum NotificationType {
+  NEW_BID
+  BID_ACCEPTED
+  STATUS_CHANGE
+  REMINDER
+  WARRANTY_EXPIRY
+}
+
+model Dispute {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id])
+  raisedById String
+  raisedBy   User     @relation(fields: [raisedById], references: [id])
+  reason     String
+  status     DisputeStatus @default(OPEN)
+  resolvedBy String?
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+}
+model OtpCode {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  codeHash  String
+  channel   OtpChannel
+  purpose   OtpPurpose
+  expiresAt DateTime
+  isUsed    Boolean    @default(false)
+  createdAt DateTime   @default(now())
+
+  @@index([userId, purpose])
+}
+
+enum OtpChannel {
+  EMAIL
+  SMS
+}
+
+enum OtpPurpose {
+  ACCOUNT_VERIFICATION
+  PASSWORD_RESET
+}
+
+model RequestBroadcast {
+  id          String          @id @default(uuid())
+  requestId   String
+  request     RepairRequest   @relation(fields: [requestId], references: [id])
+  providerId  String
+  provider    ProviderProfile @relation(fields: [providerId], references: [userId])
+  notifiedAt  DateTime        @default(now())
+  respondedAt DateTime?
+
+  @@unique([requestId, providerId])
+  @@index([providerId])
+}
