@@ -2,6 +2,9 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma.js";
 import { AppError } from "../utils/apperror.js";
+import { createEmailVerificationOtp,verifyEmailOtp } from "./otpService.js";
+
+import { sendVerificationEmail } from "./emailService.js";
 
 const SALT_ROUNDS = 10;
 
@@ -45,6 +48,29 @@ export async function signupCustomer({ fullName, email, phone, password }) {
   });
 
   // TODO (Epic 2, Story 1): call the OTP service here to send the verification code
+
+  // Generate and store the customer's verification OTP.
+  const otp = await createEmailVerificationOtp(user.id);
+
+  // Send the OTP to the customer's email using Brevo.
+  try {
+    await sendVerificationEmail(user.email, otp);
+  } catch (error) {
+    // The customer account and OTP already exist in PostgreSQL.
+    // Keep the account so the customer can request another OTP later.
+    console.error(
+      "Failed to send signup verification email:",
+      error.message
+    );
+
+    throw new AppError(
+      "Your account was created, but we couldn't send the verification email. Please request a new code.",
+      503
+    );
+  }
+
+  
+
   return user;
 }
 
@@ -76,4 +102,96 @@ export async function loginUser({ identifier, password, expectedRole }) {
 
   const { passwordHash, ...safeUser } = user;
   return { token, tokenExpiresAt: exp * 1000, user: safeUser };
+}
+
+export async function verifyCustomerEmail({ email, otp }) {
+  // 1. Validate the email
+  if (typeof email !== "string" || !email.trim()) {
+    throw new AppError("Email is required", 400);
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  // 2. Find the customer
+  const user = await prisma.user.findUnique({
+    where: {
+      email: cleanEmail,
+    },
+    select: {
+      id: true,
+      role: true,
+      isVerified: true,
+    },
+  });
+
+  if (!user || user.role !== "CUSTOMER") {
+    throw new AppError("Invalid email or verification code", 400);
+  }
+
+  // 3. Check whether already verified
+  if (user.isVerified) {
+    throw new AppError("Email is already verified", 409);
+  }
+
+  // 4. Verify the OTP using our existing service
+  return verifyEmailOtp(user.id, otp);
+}
+
+
+export async function resendCustomerVerificationOtp(email) {
+  // 1. Validate email format
+  if (
+    typeof email !== "string" ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  ) {
+    throw new AppError("Valid email is required", 400);
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+
+  // 2. Find the customer
+  const user = await prisma.user.findUnique({
+    where: {
+      email: cleanEmail,
+    },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      isVerified: true,
+    },
+  });
+
+  // 3. Return a generic response for unknown or verified accounts.
+  // Avoid revealing which email addresses have accounts.
+  if (!user || user.role !== "CUSTOMER" || user.isVerified) {
+    return {
+      message:
+        "If this email belongs to an unverified account, a verification code will be sent if eligible.",
+    };
+  }
+
+  // 4. Generate and store a new OTP.
+  // Our OTP service enforces cooldown and hourly limits.
+  const otp = await createEmailVerificationOtp(user.id);
+
+  // 5. Send the new OTP through Brevo.
+  try {
+    await sendVerificationEmail(user.email, otp);
+  } catch (error) {
+    console.error(
+      "Failed to resend verification email:",
+      error.message
+    );
+
+    throw new AppError(
+      "Unable to send verification email. Please try again later.",
+      503
+    );
+  }
+
+  return {
+    message:
+      "If this email belongs to an unverified account, a verification code will be sent if eligible.",
+  };
 }
