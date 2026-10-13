@@ -1,4 +1,4 @@
-import { signupCustomer, loginUser } from "../services/authService.js";
+import {signupCustomer,loginUser, verifyCustomerEmail, resendCustomerVerificationOtp} from "../services/authService.js";
 import { validateSignupInput } from "../utils/validators.js";
 import { AUTH_COOKIE_NAME, authCookieOptions } from "../utils/cookieOptions.js";
 import { AppError } from "../utils/apperror.js";
@@ -53,6 +53,38 @@ export async function customerLogin(req, res) {
     return handleError(res, error);
   }
 }
+
+
+
+export async function customerVerifyEmail(req, res) {
+  try {
+    const { email, otp } = req.body ?? {};
+
+    const result = await verifyCustomerEmail({
+      email,
+      otp,
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+
+export async function customerResendOtp(req, res) {
+  try {
+    const { email } = req.body ?? {};
+
+    const result = await resendCustomerVerificationOtp(email);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+
 
 
 export function logout(req, res) {
