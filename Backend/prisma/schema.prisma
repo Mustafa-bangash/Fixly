@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,30 +11,31 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  role         Role
-  fullName     String
-  email        String   @unique
-  phone        String   @unique
-  passwordHash String
-  isVerified   Boolean  @default(false)
-  profilePhotoUrl String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  role                 Role
+  fullName             String
+  email                String   @unique
+  phone                String   @unique
+  passwordHash         String
+  isVerified           Boolean  @default(false)
+  profilePhotoUrl      String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-   customerProfile CustomerProfile?
-  providerProfile ProviderProfile?
-  repairRequests RepairRequest[]
-  jobs Job[]
-  messages Message[]
-  ratingsGiven Rating[]
-  repairHistory RepairHistory[]
-  warrantyClaims WarrantyClaim[]
- repeatProblemFlags RepeatProblemFlag[]
-  maintenanceReminders MaintenanceReminder[]
-   notifications Notification[]
-   disputesRaised Dispute[] 
-   otpCodes OtpCode[]
+  customerProfile        CustomerProfile?
+  providerProfile        ProviderProfile?
+  repairRequests         RepairRequest[]
+  jobs                   Job[]
+  messages               Message[]
+  conversationsAsCustomer Conversation[] @relation("ConversationCustomer")
+  ratingsGiven           Rating[]
+  repairHistory          RepairHistory[]
+  warrantyClaims         WarrantyClaim[]
+  repeatProblemFlags     RepeatProblemFlag[]
+  maintenanceReminders   MaintenanceReminder[]
+  notifications          Notification[]
+  disputesRaised         Dispute[]
+  otpCodes               OtpCode[]
 }
 
 enum Role {
@@ -65,35 +64,35 @@ model ProviderProfile {
   baseLatitude       Float?
   baseLongitude      Float?
 
-  skills ProviderSkill[]
-  bids Bid[]
-  jobs Job[]
+  skills          ProviderSkill[]
+  bids            Bid[]
+  jobs            Job[]
   ratingsReceived Rating[]
-  broadcasts RequestBroadcast[]
+  broadcasts      RequestBroadcast[]
+  conversations   Conversation[]
 }
 
 model ServiceCategory {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String?
+  id                            String  @id @default(uuid())
+  name                          String  @unique
+  description                   String?
   defaultReminderIntervalMonths Int?
   peakSeasonStartMonth          Int?
 
-  providerSkills ProviderSkill[]
-  repairRequests RepairRequest[]
-  repairHistoryEntries RepairHistory[]
+  providerSkills                ProviderSkill[]
+  repairRequests                RepairRequest[]
+  repairHistoryEntries          RepairHistory[]
   repeatProblemRecommendations RepeatProblemRecommendation[]
-  repeatProblemFlags RepeatProblemFlag[]
-   maintenanceReminders MaintenanceReminder[]
-   
+  repeatProblemFlags            RepeatProblemFlag[]
+  maintenanceReminders          MaintenanceReminder[]
 }
 
 model ProviderSkill {
-  id                 String   @id @default(uuid())
+  id                 String             @id @default(uuid())
   providerId         String
-  provider           ProviderProfile @relation(fields: [providerId], references: [userId])
+  provider           ProviderProfile    @relation(fields: [providerId], references: [userId])
   categoryId         String
-  category           ServiceCategory @relation(fields: [categoryId], references: [id])
+  category           ServiceCategory    @relation(fields: [categoryId], references: [id])
   verificationStatus VerificationStatus @default(PENDING)
   verificationDocUrl String?
   reviewedBy         String?
@@ -107,7 +106,6 @@ enum VerificationStatus {
   APPROVED
   REJECTED
 }
-
 
 model RepairRequest {
   id            String        @id @default(uuid())
@@ -124,14 +122,14 @@ model RepairRequest {
   status        RequestStatus @default(OPEN)
   createdAt     DateTime      @default(now())
 
-  media RequestMedia[]
-  bids  Bid[]
-  job   Job?
-  broadcasts RequestBroadcast[]
+  media         RequestMedia[]
+  bids          Bid[]
+  job           Job?
+  broadcasts    RequestBroadcast[]
+  conversations Conversation[]
 
   @@index([status, categoryId])
   @@index([customerId])
-  
 }
 
 enum EmergencyType {
@@ -150,13 +148,13 @@ enum RequestStatus {
 }
 
 model RequestMedia {
-  id        String     @id @default(uuid())
+  id        String        @id @default(uuid())
   requestId String
   request   RepairRequest @relation(fields: [requestId], references: [id])
   mediaType MediaType
   fileUrl   String
   stage     MediaStage
-  createdAt DateTime   @default(now())
+  createdAt DateTime      @default(now())
 }
 
 enum MediaType {
@@ -169,23 +167,22 @@ enum MediaStage {
   AFTER
 }
 
-
 model Bid {
-  id         String   @id @default(uuid())
+  id         String          @id @default(uuid())
   requestId  String
-  request    RepairRequest @relation(fields: [requestId], references: [id])
+  request    RepairRequest   @relation(fields: [requestId], references: [id])
   providerId String
   provider   ProviderProfile @relation(fields: [providerId], references: [userId])
   price      Decimal
   etaMinutes Int
   note       String?
-  status     BidStatus @default(PENDING)
-  createdAt  DateTime  @default(now())
+  status     BidStatus       @default(PENDING)
+  createdAt  DateTime        @default(now())
 
   job Job?
 
   @@index([requestId])
-  @@index([providerId]) 
+  @@index([providerId])
 }
 
 enum BidStatus {
@@ -196,20 +193,20 @@ enum BidStatus {
 }
 
 model Job {
-  id            String    @id @default(uuid())
-  requestId     String    @unique
-  request       RepairRequest @relation(fields: [requestId], references: [id])
-  acceptedBidId String    @unique
-  acceptedBid   Bid       @relation(fields: [acceptedBidId], references: [id])
-  customerId    String
-  customer      User      @relation(fields: [customerId], references: [id])
-  providerId    String
-  provider      ProviderProfile @relation(fields: [providerId], references: [userId])
-  status        JobStatus @default(CONFIRMED)
-  confirmedAt   DateTime  @default(now())
-  startedAt     DateTime?
-  completedAt   DateTime?
-  followUpSentAt DateTime? 
+  id               String          @id @default(uuid())
+  requestId        String          @unique
+  request          RepairRequest   @relation(fields: [requestId], references: [id])
+  acceptedBidId    String          @unique
+  acceptedBid      Bid             @relation(fields: [acceptedBidId], references: [id])
+  customerId       String
+  customer         User            @relation(fields: [customerId], references: [id])
+  providerId       String
+  provider         ProviderProfile @relation(fields: [providerId], references: [userId])
+  status           JobStatus       @default(CONFIRMED)
+  confirmedAt      DateTime        @default(now())
+  startedAt        DateTime?
+  completedAt      DateTime?
+  followUpSentAt   DateTime?
   followUpResolved Boolean?
 
   locationPings ProviderLocationPing[]
@@ -243,49 +240,76 @@ model ProviderLocationPing {
   @@index([jobId, recordedAt])
 }
 
+enum ConversationStatus {
+  OPEN
+  LOCKED
+}
+
+model Conversation {
+  id         String             @id @default(uuid())
+  requestId  String
+  customerId String
+  providerId String
+  status     ConversationStatus @default(OPEN)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  request  RepairRequest   @relation(fields: [requestId], references: [id])
+  customer User            @relation("ConversationCustomer", fields: [customerId], references: [id])
+  provider ProviderProfile @relation(fields: [providerId], references: [userId])
+  messages Message[]
+
+  @@unique([requestId, providerId])
+  @@index([customerId])
+  @@index([providerId])
+}
+
 model Message {
-  id       String   @id @default(uuid())
-  jobId    String
-  job      Job      @relation(fields: [jobId], references: [id])
-  senderId String
-  sender   User     @relation(fields: [senderId], references: [id])
-  content  String
-  sentAt   DateTime @default(now())
+  id             String   @id @default(uuid())
+  jobId          String?
+  conversationId String?
+  senderId       String
+  content        String
+  sentAt         DateTime @default(now())
+
+  job          Job?          @relation(fields: [jobId], references: [id])
+  conversation Conversation? @relation(fields: [conversationId], references: [id])
+  sender       User          @relation(fields: [senderId], references: [id])
 
   @@index([jobId, sentAt])
-
+  @@index([conversationId, sentAt])
 }
 
 model Rating {
-  id            String   @id @default(uuid())
-  jobId         String   @unique
-  job           Job      @relation(fields: [jobId], references: [id])
+  id            String          @id @default(uuid())
+  jobId         String          @unique
+  job           Job             @relation(fields: [jobId], references: [id])
   customerId    String
-  customer      User     @relation(fields: [customerId], references: [id])
+  customer      User            @relation(fields: [customerId], references: [id])
   providerId    String
   provider      ProviderProfile @relation(fields: [providerId], references: [userId])
   stars         Int
   writtenReview String?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime        @default(now())
 }
 
 model RepairHistory {
-  id         String   @id @default(uuid())
+  id         String          @id @default(uuid())
   customerId String
-  customer   User     @relation(fields: [customerId], references: [id])
-  jobId      String   @unique
-  job        Job      @relation(fields: [jobId], references: [id])
+  customer   User            @relation(fields: [customerId], references: [id])
+  jobId      String          @unique
+  job        Job             @relation(fields: [jobId], references: [id])
   categoryId String
   category   ServiceCategory @relation(fields: [categoryId], references: [id])
   summary    String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime        @default(now())
 }
 
 model Warranty {
-  id        String   @id @default(uuid())
-  jobId     String   @unique
-  job       Job      @relation(fields: [jobId], references: [id])
-  issuedAt  DateTime @default(now())
+  id        String         @id @default(uuid())
+  jobId     String         @unique
+  job       Job            @relation(fields: [jobId], references: [id])
+  issuedAt  DateTime       @default(now())
   expiresAt DateTime
   status    WarrantyStatus @default(ACTIVE)
 
@@ -299,15 +323,15 @@ enum WarrantyStatus {
 }
 
 model WarrantyClaim {
-  id          String   @id @default(uuid())
+  id          String      @id @default(uuid())
   warrantyId  String
-  warranty    Warranty @relation(fields: [warrantyId], references: [id])
+  warranty    Warranty    @relation(fields: [warrantyId], references: [id])
   customerId  String
-  customer    User     @relation(fields: [customerId], references: [id])
+  customer    User        @relation(fields: [customerId], references: [id])
   description String
   status      ClaimStatus @default(SUBMITTED)
   resolvedBy  String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime    @default(now())
   resolvedAt  DateTime?
 }
 
@@ -319,7 +343,7 @@ enum ClaimStatus {
 }
 
 model RepeatProblemRecommendation {
-  id                 String   @id @default(uuid())
+  id                 String          @id @default(uuid())
   categoryId         String
   category           ServiceCategory @relation(fields: [categoryId], references: [id])
   patternDescription String
@@ -327,25 +351,25 @@ model RepeatProblemRecommendation {
 }
 
 model RepeatProblemFlag {
-  id                  String   @id @default(uuid())
+  id                  String          @id @default(uuid())
   customerId          String
-  customer            User     @relation(fields: [customerId], references: [id])
+  customer            User            @relation(fields: [customerId], references: [id])
   categoryId          String
   category            ServiceCategory @relation(fields: [categoryId], references: [id])
-  occurrenceCount     Int      @default(1)
-  lastFlaggedAt       DateTime @default(now())
+  occurrenceCount     Int             @default(1)
+  lastFlaggedAt       DateTime        @default(now())
   recommendationShown String?
 }
 
 model MaintenanceReminder {
-  id               String   @id @default(uuid())
+  id               String          @id @default(uuid())
   customerId       String
-  customer         User     @relation(fields: [customerId], references: [id])
+  customer         User            @relation(fields: [customerId], references: [id])
   categoryId       String
   category         ServiceCategory @relation(fields: [categoryId], references: [id])
   nextReminderDate DateTime
   lastServiceDate  DateTime?
-  status           ReminderStatus @default(PENDING)
+  status           ReminderStatus  @default(PENDING)
 }
 
 enum ReminderStatus {
@@ -355,13 +379,13 @@ enum ReminderStatus {
 }
 
 model Payment {
-  id             String   @id @default(uuid())
-  jobId          String   @unique
-  job            Job      @relation(fields: [jobId], references: [id])
+  id             String          @id @default(uuid())
+  jobId          String          @unique
+  job            Job             @relation(fields: [jobId], references: [id])
   amount         Decimal
   method         PaymentMethod
   walletProvider WalletProvider?
-  status         PaymentStatus @default(PENDING)
+  status         PaymentStatus   @default(PENDING)
   paidAt         DateTime?
 
   commission Commission?
@@ -393,13 +417,13 @@ model Commission {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User             @relation(fields: [userId], references: [id])
   type      NotificationType
   payload   Json?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
 
   @@index([userId, isRead])
 }
@@ -413,15 +437,15 @@ enum NotificationType {
 }
 
 model Dispute {
-  id         String   @id @default(uuid())
+  id         String        @id @default(uuid())
   jobId      String
-  job        Job      @relation(fields: [jobId], references: [id])
+  job        Job           @relation(fields: [jobId], references: [id])
   raisedById String
-  raisedBy   User     @relation(fields: [raisedById], references: [id])
+  raisedBy   User          @relation(fields: [raisedById], references: [id])
   reason     String
   status     DisputeStatus @default(OPEN)
   resolvedBy String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime      @default(now())
   resolvedAt DateTime?
 }
 
@@ -430,6 +454,7 @@ enum DisputeStatus {
   UNDER_REVIEW
   RESOLVED
 }
+
 model OtpCode {
   id        String     @id @default(uuid())
   userId    String

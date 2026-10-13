@@ -54,6 +54,7 @@ export async function customerLogin(req, res) {
   }
 }
 
+
 export function logout(req, res) {
   res.clearCookie(AUTH_COOKIE_NAME, authCookieOptions());
   return res.status(200).json({ message: "Logged out" });
