@@ -62,6 +62,27 @@ export const TRUST = {
   ],
 };
 
+export const JOIN_OPTIONS = [
+  {
+    title: 'Join as a Customer',
+    description: 'For people who need repair or maintenance services. Post a job and compare prices.',
+    buttonText: 'Join as a Customer',
+    to: '/signup',
+    variant: 'primary',
+    image: customerProblemImage,
+    imageAlt: 'Customer describing a repair problem at home',
+  },
+  {
+    title: 'Join as a Provider',
+    description: 'For skilled people who want to offer services and bid on jobs.',
+    buttonText: 'Join as a Provider',
+    to: '/provider/signup',
+    variant: 'secondary',
+    image: technicianRepairImage,
+    imageAlt: 'Technician preparing for a job',
+  },
+];
+
 export const CTA_TITLE = 'Need help with something at home or at work?';
 
 export const FOOTER_COLUMNS = [

@@ -3,6 +3,9 @@ export const ROUTES = {
   home: '/',
   login: '/login',
   signup: '/signup',
+  providerSignup: '/provider/signup',
+  verifyEmail: '/verify-email',
+  forgotPassword: '/forgot-password',
   how: '/how-it-works',
   info: (slug) => `/info/${slug}`,
 };
