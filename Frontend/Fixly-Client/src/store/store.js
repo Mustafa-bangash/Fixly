@@ -1,9 +1,11 @@
 import { configureStore } from '@reduxjs/toolkit';
 import uiReducer from './uiSlice.js';
-// main redux store of the app, every slice has to be added inside reducer
+import authReducer from './authSlice.js';
+
+// Main Redux store of Fixly Client
 export const store = configureStore({
   reducer: {
-        // ui slice keeps the online / offline status
     ui: uiReducer,
+    auth: authReducer,
   },
 });
