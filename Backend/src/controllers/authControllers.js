@@ -55,6 +55,7 @@ export async function customerLogin(req, res) {
 }
 
 
+
 export async function customerVerifyEmail(req, res) {
   try {
     const { email, otp } = req.body ?? {};
@@ -82,6 +83,7 @@ export async function customerResendOtp(req, res) {
     return handleError(res, error);
   }
 }
+
 
 
 
