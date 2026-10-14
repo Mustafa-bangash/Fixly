@@ -19,7 +19,12 @@ const publicUserFields = {
   createdAt: true,
 };
 
-export async function signupCustomer({ fullName, email, phone, password }) {
+export async function signupUser({ fullName, email, phone, password },role) {
+
+  if (!["CUSTOMER", "PROVIDER"].includes(role)) {
+  throw new AppError("Invalid signup role", 400);
+}
+
   const cleanEmail = email.trim().toLowerCase();
   const cleanPhone = phone.trim();
 
@@ -35,17 +40,21 @@ export async function signupCustomer({ fullName, email, phone, password }) {
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
   // Creates the User and its CustomerProfile together, so one can't exist without the other
-  const user = await prisma.user.create({
-    data: {
-      role: "CUSTOMER",
-      fullName: fullName.trim(),
-      email: cleanEmail,
-      phone: cleanPhone,
-      passwordHash,
-      customerProfile: { create: {} },
-    },
-    select: publicUserFields,
-  });
+  
+const user = await prisma.user.create({
+  data: {
+    role,
+    fullName: fullName.trim(),
+    email: cleanEmail,
+    phone: cleanPhone,
+    passwordHash,
+
+    ...(role === "CUSTOMER"
+      ? { customerProfile: { create: {} } }
+      : { providerProfile: { create: {} } }),
+  },
+  select: publicUserFields,
+});
 
   // TODO (Epic 2, Story 1): call the OTP service here to send the verification code
 
@@ -104,7 +113,7 @@ export async function loginUser({ identifier, password, expectedRole }) {
   return { token, tokenExpiresAt: exp * 1000, user: safeUser };
 }
 
-export async function verifyCustomerEmail({ email, otp }) {
+export async function verifyUserEmail({ email, otp }, expectedRole) {
   // 1. Validate the email
   if (typeof email !== "string" || !email.trim()) {
     throw new AppError("Email is required", 400);
@@ -124,7 +133,7 @@ export async function verifyCustomerEmail({ email, otp }) {
     },
   });
 
-  if (!user || user.role !== "CUSTOMER") {
+  if (!user || user.role !== expectedRole) {
     throw new AppError("Invalid email or verification code", 400);
   }
 
@@ -138,7 +147,7 @@ export async function verifyCustomerEmail({ email, otp }) {
 }
 
 
-export async function resendCustomerVerificationOtp(email) {
+export async function resendUserVerificationOtp(email, expectedRole) {
   // 1. Validate email format
   if (
     typeof email !== "string" ||
@@ -164,7 +173,7 @@ export async function resendCustomerVerificationOtp(email) {
 
   // 3. Return a generic response for unknown or verified accounts.
   // Avoid revealing which email addresses have accounts.
-  if (!user || user.role !== "CUSTOMER" || user.isVerified) {
+  if (!user || user.role !== expectedRole || user.isVerified) {
     return {
       message:
         "If this email belongs to an unverified account, a verification code will be sent if eligible.",

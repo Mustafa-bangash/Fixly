@@ -1,4 +1,4 @@
-import {signupCustomer,loginUser, verifyCustomerEmail, resendCustomerVerificationOtp} from "../services/authService.js";
+import {signupUser,loginUser, verifyUserEmail, resendUserVerificationOtp} from "../services/authService.js";
 import { validateSignupInput } from "../utils/validators.js";
 import { AUTH_COOKIE_NAME, authCookieOptions } from "../utils/cookieOptions.js";
 import { AppError } from "../utils/apperror.js";
@@ -21,9 +21,37 @@ export async function customerSignup(req, res) {
     if (errors.length) {
       return res.status(400).json({ message: "Invalid input", errors });
     }
-    const user = await signupCustomer(req.body);
+    const user = await signupUser(req.body, "CUSTOMER");
     return res.status(201).json({
       message: "Account created. Please verify your account to continue.",
+      user,
+    });
+
+    
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+
+export async function providerSignup(req, res) {
+  try {
+    // Reuse the same validation as customer signup.
+    const errors = validateSignupInput(req.body);
+
+    if (errors.length) {
+      return res.status(400).json({
+        message: "Invalid input",
+        errors,
+      });
+    }
+
+    // Create a provider account using our shared service.
+    const user = await signupUser(req.body, "PROVIDER");
+
+    return res.status(201).json({
+      message:
+        "Provider account created. Please verify your email to continue.",
       user,
     });
   } catch (error) {
@@ -31,58 +59,78 @@ export async function customerSignup(req, res) {
   }
 }
 
-export async function customerLogin(req, res) {
-  try {
-    const { identifier, password } = req.body;
-    if (!identifier || !password) {
-      return res.status(400).json({ message: "Email or phone, and password are required" });
+
+
+export function loginController(expectedRole) {
+  return async (req, res) => {
+    try {
+      const { identifier, password } = req.body ?? {};
+
+      if (!identifier || !password) {
+        return res.status(400).json({
+          message: "Email or phone, and password are required",
+        });
+      }
+
+      const { token, tokenExpiresAt, user } = await loginUser({
+        identifier,
+        password,
+        expectedRole,
+      });
+
+      res.cookie(AUTH_COOKIE_NAME, token, {
+        ...authCookieOptions(),
+        maxAge: tokenExpiresAt - Date.now(),
+      });
+
+      return res.status(200).json({ user });
+    } catch (error) {
+      return handleError(res, error);
     }
-    const { token, tokenExpiresAt, user } = await loginUser({
-      identifier,
-      password,
-      expectedRole: "CUSTOMER",
-    });
-
-    res.cookie(AUTH_COOKIE_NAME, token, {
-      ...authCookieOptions(),
-      maxAge: tokenExpiresAt - Date.now(),
-    });
-
-    return res.status(200).json({ user });
-  } catch (error) {
-    return handleError(res, error);
-  }
+  };
 }
 
 
 
-export async function customerVerifyEmail(req, res) {
-  try {
-    const { email, otp } = req.body ?? {};
 
-    const result = await verifyCustomerEmail({
-      email,
-      otp,
-    });
 
-    return res.status(200).json(result);
-  } catch (error) {
-    return handleError(res, error);
-  }
+export function verifyEmailController(expectedRole) {
+  return async (req, res) => {
+    try {
+      const { email, otp } = req.body ?? {};
+
+      const result = await verifyUserEmail(
+        { email, otp },
+        expectedRole
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return handleError(res, error);
+    }
+  };
 }
 
 
-export async function customerResendOtp(req, res) {
-  try {
-    const { email } = req.body ?? {};
 
-    const result = await resendCustomerVerificationOtp(email);
 
-    return res.status(200).json(result);
-  } catch (error) {
-    return handleError(res, error);
-  }
+export function resendOtpController(expectedRole) {
+  return async (req, res) => {
+    try {
+      const { email } = req.body ?? {};
+
+      const result = await resendUserVerificationOtp(
+        email,
+        expectedRole
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return handleError(res, error);
+    }
+  };
 }
+
 
 
 
