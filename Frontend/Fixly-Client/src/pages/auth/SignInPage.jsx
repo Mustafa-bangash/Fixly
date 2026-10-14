@@ -4,12 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { signInSchema } from '../../schemas/authSchemas.js';
-import { setUser, setPendingEmail } from '../../store/authSlice.js';
-import api from '../../api/axiosInstance.js';
+import { setUser, setPendingAuth } from '../../store/authSlice.js';
+import { loginUser } from '../../api/authApi.js';
 import { ROUTES } from '../../utils/routes.js';
 import AuthLayout from '../../layouts/AuthLayout.jsx';
 
-export default function SignInPage() {
+export default function SignInPage({ role = 'customer' }) {
+  const isProvider = role === 'provider';
+  const activeRole = isProvider ? 'provider' : 'customer';
+
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
@@ -38,15 +41,16 @@ export default function SignInPage() {
       setServerError('');
       setUnverifiedEmail('');
 
-      const response = await api.post('/auth/customer/login', {
+      // Call the centralized login API with dynamic role
+      const result = await loginUser(activeRole, {
         identifier: data.identifier.trim(),
         password: data.password,
       });
 
       // Save user to Redux state
-      dispatch(setUser(response.data.user));
+      dispatch(setUser(result.user));
 
-      // Navigate to homepage or dashboard
+      // Navigate to homepage
       navigate(ROUTES.home);
     } catch (err) {
       const status = err.response?.status;
@@ -62,18 +66,25 @@ export default function SignInPage() {
   };
 
   const handleGoToVerification = () => {
-    dispatch(setPendingEmail(unverifiedEmail));
-    navigate(ROUTES.verifyEmail, { state: { email: unverifiedEmail } });
+    dispatch(setPendingAuth({ email: unverifiedEmail, role: activeRole }));
+    navigate(ROUTES.verifyEmail, { state: { email: unverifiedEmail, role: activeRole } });
   };
 
   return (
     <AuthLayout>
       <div className="mb-6">
+        {isProvider && (
+          <span className="inline-block rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand uppercase tracking-wider mb-2">
+            Service Provider
+          </span>
+        )}
         <h1 className="text-[26px] font-bold text-navy leading-tight">
-          Welcome back
+          {isProvider ? 'Provider Sign In' : 'Welcome back'}
         </h1>
         <p className="mt-1.5 text-sm text-muted">
-          Sign in to your Fixly customer account to request repairs and track bids.
+          {isProvider
+            ? 'Sign in to your Fixly provider account to view local jobs and submit bids.'
+            : 'Sign in to your Fixly customer account to request repairs and track bids.'}
         </p>
       </div>
 
@@ -119,7 +130,7 @@ export default function SignInPage() {
             id="identifier"
             type="text"
             autoComplete="username"
-            placeholder="e.g. ahmed@example.com or 03001234567"
+            placeholder="e.g. name@example.com or 03001234567"
             {...register('identifier')}
             className={`mt-1.5 w-full rounded-lg border px-3.5 py-2.5 text-base text-ink outline-none transition-colors ${
               errors.identifier
@@ -191,18 +202,21 @@ export default function SignInPage() {
       {/* Footer Navigation */}
       <div className="mt-6 border-t border-line pt-4 text-center text-sm text-muted">
         <p>
-          Don&apos;t have an account?{' '}
-          <Link to={ROUTES.signup} className="font-semibold text-brand hover:underline">
-            Join as a Customer
+          {isProvider ? "Don't have a provider account?" : "Don't have an account?"}{' '}
+          <Link
+            to={isProvider ? ROUTES.providerSignup : ROUTES.signup}
+            className="font-semibold text-brand hover:underline"
+          >
+            {isProvider ? 'Join as a Provider' : 'Join as a Customer'}
           </Link>
         </p>
         <p className="mt-2">
-          Are you a technician?{' '}
+          {isProvider ? 'Looking for repair services?' : 'Are you a service technician?'}{' '}
           <Link
-            to={ROUTES.providerSignup}
+            to={isProvider ? ROUTES.login : ROUTES.providerLogin}
             className="font-semibold text-brand hover:underline"
           >
-            Join as a Provider
+            {isProvider ? 'Sign in as a Customer' : 'Sign in as a Provider'}
           </Link>
         </p>
       </div>

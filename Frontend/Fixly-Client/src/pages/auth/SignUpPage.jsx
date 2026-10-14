@@ -4,12 +4,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { signUpSchema } from '../../schemas/authSchemas.js';
-import { setPendingEmail } from '../../store/authSlice.js';
-import api from '../../api/axiosInstance.js';
+import { setPendingAuth } from '../../store/authSlice.js';
+import { registerUser } from '../../api/authApi.js';
 import { ROUTES } from '../../utils/routes.js';
 import AuthLayout from '../../layouts/AuthLayout.jsx';
 
-export default function SignUpPage() {
+export default function SignUpPage({ role = 'customer' }) {
+  const isProvider = role === 'provider';
+  const activeRole = isProvider ? 'provider' : 'customer';
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [serverError, setServerError] = useState('');
@@ -35,20 +38,20 @@ export default function SignUpPage() {
   const onSubmit = async (data) => {
     try {
       setServerError('');
-      const payload = {
+
+      // Call the centralized registration API with dynamic role
+      await registerUser(activeRole, {
         fullName: data.fullName,
         email: data.email,
         phone: data.phone,
         password: data.password,
-      };
+      });
 
-      await api.post('/auth/customer/signup', payload);
+      // Save pending email and role in Redux
+      dispatch(setPendingAuth({ email: data.email, role: activeRole }));
 
-      // Save pending email in Redux for the verification screen
-      dispatch(setPendingEmail(data.email));
-
-      // Navigate to email verification screen
-      navigate(ROUTES.verifyEmail, { state: { email: data.email } });
+      // Navigate to email verification screen passing email and role in state
+      navigate(ROUTES.verifyEmail, { state: { email: data.email, role: activeRole } });
     } catch (err) {
       const message =
         err.response?.data?.message ||
@@ -60,11 +63,18 @@ export default function SignUpPage() {
   return (
     <AuthLayout>
       <div className="mb-6">
+        {isProvider && (
+          <span className="inline-block rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand uppercase tracking-wider mb-2">
+            Service Provider Account
+          </span>
+        )}
         <h1 className="text-[26px] font-bold text-navy leading-tight">
-          Create your account
+          {isProvider ? 'Join as a Provider' : 'Create your account'}
         </h1>
         <p className="mt-1.5 text-sm text-muted">
-          We will verify your email address with a 6-digit code when you sign up.
+          {isProvider
+            ? 'Create your provider account. You will complete identity and skill verification after you log in.'
+            : 'We will verify your email address with a 6-digit code when you sign up.'}
         </p>
       </div>
 
@@ -90,7 +100,7 @@ export default function SignUpPage() {
             id="fullName"
             type="text"
             autoComplete="name"
-            placeholder="e.g. Ahmed Khan"
+            placeholder={isProvider ? 'e.g. Usman Tariq' : 'e.g. Ahmed Khan'}
             {...register('fullName')}
             className={`mt-1.5 w-full rounded-lg border px-3.5 py-2.5 text-base text-ink outline-none transition-colors ${
               errors.fullName
@@ -264,25 +274,32 @@ export default function SignUpPage() {
           disabled={isSubmitting}
           className="mt-2 w-full rounded-lg bg-brand py-3 text-center text-base font-semibold text-white transition-colors hover:bg-[#1648a0] disabled:opacity-60 cursor-pointer"
         >
-          {isSubmitting ? 'Creating account...' : 'Create Account'}
+          {isSubmitting
+            ? 'Creating account...'
+            : isProvider
+            ? 'Create Provider Account'
+            : 'Create Account'}
         </button>
       </form>
 
       {/* Footer Navigation Links */}
       <div className="mt-6 border-t border-line pt-4 text-center text-sm text-muted">
         <p>
-          Already have an account?{' '}
-          <Link to={ROUTES.login} className="font-semibold text-brand hover:underline">
+          {isProvider ? 'Already have a provider account?' : 'Already have an account?'}{' '}
+          <Link
+            to={isProvider ? ROUTES.providerLogin : ROUTES.login}
+            className="font-semibold text-brand hover:underline"
+          >
             Sign In
           </Link>
         </p>
         <p className="mt-2">
-          Want to offer services?{' '}
+          {isProvider ? 'Looking for repair services instead?' : 'Want to offer services?'}{' '}
           <Link
-            to={ROUTES.providerSignup}
+            to={isProvider ? ROUTES.signup : ROUTES.providerSignup}
             className="font-semibold text-brand hover:underline"
           >
-            Join as a Provider
+            {isProvider ? 'Join as a Customer' : 'Join as a Provider'}
           </Link>
         </p>
       </div>
