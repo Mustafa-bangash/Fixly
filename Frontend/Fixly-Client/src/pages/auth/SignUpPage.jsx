@@ -63,11 +63,6 @@ export default function SignUpPage({ role = 'customer' }) {
   return (
     <AuthLayout>
       <div className="mb-6">
-        {isProvider && (
-          <span className="inline-block rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand uppercase tracking-wider mb-2">
-            Service Provider Account
-          </span>
-        )}
         <h1 className="text-[26px] font-bold text-navy leading-tight">
           {isProvider ? 'Join as a Provider' : 'Create your account'}
         </h1>
@@ -252,11 +247,11 @@ export default function SignUpPage({ role = 'customer' }) {
             />
             <span className="text-xs text-muted leading-snug">
               I agree to the{' '}
-              <Link to="/info/terms-and-conditions" className="text-brand underline">
+              <Link to={ROUTES.terms} className="text-brand underline">
                 Terms &amp; Conditions
               </Link>{' '}
               and{' '}
-              <Link to="/info/privacy-policy" className="text-brand underline">
+              <Link to={ROUTES.privacy} className="text-brand underline">
                 Privacy Policy
               </Link>
             </span>
@@ -291,15 +286,6 @@ export default function SignUpPage({ role = 'customer' }) {
             className="font-semibold text-brand hover:underline"
           >
             Sign In
-          </Link>
-        </p>
-        <p className="mt-2">
-          {isProvider ? 'Looking for repair services instead?' : 'Want to offer services?'}{' '}
-          <Link
-            to={isProvider ? ROUTES.signup : ROUTES.providerSignup}
-            className="font-semibold text-brand hover:underline"
-          >
-            {isProvider ? 'Join as a Customer' : 'Join as a Provider'}
           </Link>
         </p>
       </div>
