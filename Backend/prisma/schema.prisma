@@ -117,8 +117,8 @@ model RepairRequest {
   isComplexJob  Boolean         @default(false)
   isEmergency   Boolean         @default(false)
   emergencyType EmergencyType?
-  latitude      Float
-  longitude     Float
+  latitude      Float?
+  longitude     Float?
   status        RequestStatus   @default(DRAFT)
   createdAt     DateTime        @default(now())
 

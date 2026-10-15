@@ -10,6 +10,7 @@ import conversationRoutes from "./routes/conversationRoutes.js";
 import { getAccessibleConversation } from "./services/conversationService.js";
 import { sendMessage } from "./services/messageService.js";
 import { AppError } from "./utils/apperror.js";
+import repairRequestRoutes from "./routes/repairRequestRoutes.js";
 const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
@@ -19,6 +20,7 @@ app.use(cookieParser());
 app.use("/api/upload", uploadRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/conversations", conversationRoutes);
+app.use("/api/repair-requests", repairRequestRoutes);
 
 const PORT = process.env.PORT || 5000;
 
