@@ -50,8 +50,8 @@ export default function SignInPage({ role = 'customer' }) {
       // Save user to Redux state
       dispatch(setUser(result.user));
 
-      // Navigate to homepage
-      navigate(ROUTES.home);
+      // Navigate to customer dashboard or home
+      navigate(activeRole === 'customer' ? ROUTES.dashboard : ROUTES.home);
     } catch (err) {
       const status = err.response?.status;
       const message =
