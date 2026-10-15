@@ -66,14 +66,18 @@ export async function sendVerificationEmail(recipientEmail, otp) {
     signal: AbortSignal.timeout(10000),
   });
 
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error("Brevo email delivery failed:", response.status, errorBody);
-    console.log('\n======================================================');
-    console.log(`[FALLBACK OTP] Verification code for ${recipientEmail}: ${otp}`);
-    console.log('======================================================\n');
-    return true;
-  }
+ 
+if (!response.ok) {
+  const errorBody = await response.text();
+
+  console.error(
+    "Brevo email delivery failed:",
+    response.status,
+    errorBody
+  );
+
+  throw new Error("Unable to send verification email");
+}
 
   return true;
 }
