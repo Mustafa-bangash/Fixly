@@ -4,6 +4,7 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   pendingEmail: '',
+  pendingRole: 'customer',
 };
 
 const authSlice = createSlice({
@@ -18,19 +19,35 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
     },
+    setPendingAuth(state, action) {
+      state.pendingEmail = action.payload.email;
+      state.pendingRole = action.payload.role || 'customer';
+    },
     setPendingEmail(state, action) {
       state.pendingEmail = action.payload;
     },
-    clearPendingEmail(state) {
+    setPendingRole(state, action) {
+      state.pendingRole = action.payload || 'customer';
+    },
+    clearPendingAuth(state) {
       state.pendingEmail = '';
+      state.pendingRole = 'customer';
     },
   },
 });
 
-export const { setUser, clearUser, setPendingEmail, clearPendingEmail } = authSlice.actions;
+export const {
+  setUser,
+  clearUser,
+  setPendingAuth,
+  setPendingEmail,
+  setPendingRole,
+  clearPendingAuth,
+} = authSlice.actions;
 
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectPendingEmail = (state) => state.auth.pendingEmail;
+export const selectPendingRole = (state) => state.auth.pendingRole;
 
 export default authSlice.reducer;

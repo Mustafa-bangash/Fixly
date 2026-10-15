@@ -12,6 +12,7 @@ export default function useConversationChat(conversationId) {
 
   useEffect(() => {
     if (!conversationId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMessages([]);
       setJoined(false);
       return;

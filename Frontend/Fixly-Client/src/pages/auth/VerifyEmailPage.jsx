@@ -4,8 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { otpSchema } from '../../schemas/authSchemas.js';
-import { selectPendingEmail, setPendingEmail } from '../../store/authSlice.js';
-import api from '../../api/axiosInstance.js';
+import {
+  selectPendingEmail,
+  selectPendingRole,
+  setPendingAuth,
+} from '../../store/authSlice.js';
+import { verifyUserEmail, resendUserOtp } from '../../api/authApi.js';
 import { ROUTES } from '../../utils/routes.js';
 import AuthLayout from '../../layouts/AuthLayout.jsx';
 
@@ -15,6 +19,16 @@ export default function VerifyEmailPage() {
   const dispatch = useDispatch();
 
   const reduxPendingEmail = useSelector(selectPendingEmail);
+  const reduxPendingRole = useSelector(selectPendingRole);
+
+  // Extract email and role from location state, Redux store, or query parameters
+  const queryParams = new URLSearchParams(location.search);
+  const roleFromQuery = queryParams.get('role');
+
+  const activeRole =
+    location.state?.role || roleFromQuery || reduxPendingRole || 'customer';
+  const isProvider = activeRole === 'provider';
+
   const emailFromState = location.state?.email || reduxPendingEmail || '';
 
   const [email, setEmail] = useState(emailFromState);
@@ -57,13 +71,16 @@ export default function VerifyEmailPage() {
       setServerError('');
       setSuccessMessage('');
 
-      await api.post('/auth/customer/verify-email', {
+      // Call the centralized verify API passing the dynamic role ('customer' or 'provider')
+      await verifyUserEmail(activeRole, {
         email: data.email.trim().toLowerCase(),
         otp: data.otp.trim(),
       });
 
-      // Verification successful! Redirect to login with success alert
-      navigate(ROUTES.login, {
+      // Verification successful! Redirect to the relevant login page
+      const targetLoginRoute = isProvider ? ROUTES.providerLogin : ROUTES.login;
+
+      navigate(targetLoginRoute, {
         state: {
           verifiedSuccess: true,
           message: 'Your email has been verified successfully. Please sign in.',
@@ -85,12 +102,11 @@ export default function VerifyEmailPage() {
       setServerError('');
       setSuccessMessage('');
 
-      const response = await api.post('/auth/customer/resend-otp', {
-        email: email.trim().toLowerCase(),
-      });
+      // Call the centralized resend OTP API passing the dynamic role
+      const response = await resendUserOtp(activeRole, email);
 
       setSuccessMessage(
-        response.data?.message || 'A new 6-digit code has been sent to your email.'
+        response.message || 'A new 6-digit code has been sent to your email.'
       );
       setResendCooldown(60);
     } catch (err) {
@@ -106,6 +122,11 @@ export default function VerifyEmailPage() {
   return (
     <AuthLayout>
       <div className="mb-6">
+        {isProvider && (
+          <span className="inline-block rounded-full bg-brand-light px-3 py-1 text-xs font-bold text-brand uppercase tracking-wider mb-2">
+            Provider Verification
+          </span>
+        )}
         <h1 className="text-[26px] font-bold text-navy leading-tight">
           Check your email
         </h1>
@@ -134,7 +155,7 @@ export default function VerifyEmailPage() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Email Field (editable in case user wants to change or fix) */}
+        {/* Email Field */}
         <div>
           <label htmlFor="email" className="block text-sm font-semibold text-navy">
             Email address
@@ -146,7 +167,7 @@ export default function VerifyEmailPage() {
             onChange={(e) => {
               setEmail(e.target.value);
               setValue('email', e.target.value);
-              dispatch(setPendingEmail(e.target.value));
+              dispatch(setPendingAuth({ email: e.target.value, role: activeRole }));
             }}
             placeholder="name@example.com"
             className="mt-1.5 w-full rounded-lg border border-line px-3.5 py-2.5 text-base text-ink outline-none focus:border-brand transition-colors"
@@ -216,8 +237,11 @@ export default function VerifyEmailPage() {
       </div>
 
       <div className="mt-6 border-t border-line pt-4 text-center text-sm text-muted">
-        <Link to={ROUTES.signup} className="text-brand hover:underline">
-          ← Back to Sign Up
+        <Link
+          to={isProvider ? ROUTES.providerSignup : ROUTES.signup}
+          className="text-brand hover:underline"
+        >
+          ← Back to {isProvider ? 'Provider Sign Up' : 'Sign Up'}
         </Link>
       </div>
     </AuthLayout>

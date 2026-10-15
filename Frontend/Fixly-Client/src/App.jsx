@@ -8,7 +8,6 @@ import VerifyEmailPage from './pages/auth/VerifyEmailPage.jsx';
 import SignInPage from './pages/auth/SignInPage.jsx';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage.jsx';
 import HowItWorksPage from './pages/HowItWorksPage.jsx';
-import ProviderSignupPage from './pages/auth/ProviderSignupPage.jsx';
 import { ROUTES } from './utils/routes.js';
 
 export default function App() {
@@ -34,13 +33,23 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<PublicLayout />}>
+          {/* Landing and Public Pages */}
           <Route path={ROUTES.home} element={<LandingPage />} />
-          <Route path={ROUTES.signup} element={<SignUpPage />} />
-          <Route path={ROUTES.verifyEmail} element={<VerifyEmailPage />} />
-          <Route path={ROUTES.login} element={<SignInPage />} />
-          <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
           <Route path={ROUTES.how} element={<HowItWorksPage />} />
-          <Route path={ROUTES.providerSignup} element={<ProviderSignupPage />} />
+
+          {/* Customer Authentication Routes */}
+          <Route path={ROUTES.signup} element={<SignUpPage role="customer" />} />
+          <Route path={ROUTES.login} element={<SignInPage role="customer" />} />
+
+          {/* Provider Authentication Routes */}
+          <Route path={ROUTES.providerSignup} element={<SignUpPage role="provider" />} />
+          <Route path={ROUTES.providerLogin} element={<SignInPage role="provider" />} />
+
+          {/* Shared Verification & Password Reset */}
+          <Route path={ROUTES.verifyEmail} element={<VerifyEmailPage />} />
+          <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
         </Route>
       </Routes>

@@ -4,6 +4,7 @@ export const ROUTES = {
   login: '/login',
   signup: '/signup',
   providerSignup: '/provider/signup',
+  providerLogin: '/provider/login',
   verifyEmail: '/verify-email',
   forgotPassword: '/forgot-password',
   how: '/how-it-works',
