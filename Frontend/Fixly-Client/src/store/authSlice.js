@@ -3,8 +3,10 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   user: null,
   isAuthenticated: false,
+  authInitialized: false,
   pendingEmail: '',
   pendingRole: 'customer',
+
 };
 
 const authSlice = createSlice({
@@ -33,6 +35,10 @@ const authSlice = createSlice({
       state.pendingEmail = '';
       state.pendingRole = 'customer';
     },
+    setAuthInitialized(state, action) {
+      state.authInitialized = action.payload;
+    },
+
   },
 });
 
@@ -43,11 +49,14 @@ export const {
   setPendingEmail,
   setPendingRole,
   clearPendingAuth,
+  setAuthInitialized,
 } = authSlice.actions;
 
 export const selectCurrentUser = (state) => state.auth.user;
 export const selectIsAuthenticated = (state) => state.auth.isAuthenticated;
 export const selectPendingEmail = (state) => state.auth.pendingEmail;
 export const selectPendingRole = (state) => state.auth.pendingRole;
+export const selectAuthInitialized = (state) => state.auth.authInitialized;
+
 
 export default authSlice.reducer;

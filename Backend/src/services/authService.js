@@ -204,3 +204,27 @@ export async function resendUserVerificationOtp(email, expectedRole) {
       "If this email belongs to an unverified account, a verification code will be sent if eligible.",
   };
 }
+
+
+
+/**
+ * Get the currently authenticated user's public information.
+ */
+export async function getCurrentUser(userId) {
+  if (!userId) {
+    throw new AppError("Authentication required", 401);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+    select: publicUserFields,
+  });
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  return user;
+}

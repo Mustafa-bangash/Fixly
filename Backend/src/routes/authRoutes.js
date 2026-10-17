@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { customerSignup, loginController,logout, verifyEmailController,resendOtpController,
-    providerSignup
+    providerSignup, getCurrentUserController
  } from "../controllers/authControllers.js";
+import { requireAuth } from "../middleware/authMiddleware.js";
+
 
 const router = Router();
 
@@ -18,5 +20,9 @@ router.post("/provider/verify-email",verifyEmailController("PROVIDER"));
 router.post("/admin/login",loginController("ADMIN"));
 
 router.post("/logout", logout);
+
+
+router.get("/me", requireAuth, getCurrentUserController);
+
 
 export default router;

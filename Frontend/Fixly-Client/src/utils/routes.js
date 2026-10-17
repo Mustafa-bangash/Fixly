@@ -9,4 +9,5 @@ export const ROUTES = {
   forgotPassword: '/forgot-password',
   how: '/how-it-works',
   info: (slug) => `/info/${slug}`,
+  createRepairRequest: '/repair-requests/new',
 };

@@ -51,7 +51,9 @@ export default function SignInPage({ role = 'customer' }) {
       dispatch(setUser(result.user));
 
       // Navigate to homepage
-      navigate(ROUTES.home);
+      navigate(location.state?.from?.pathname || ROUTES.home, {
+        replace: true,
+      });
     } catch (err) {
       const status = err.response?.status;
       const message =
