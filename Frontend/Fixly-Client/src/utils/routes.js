@@ -17,5 +17,6 @@ export const ROUTES = {
   terms: '/terms',
   privacy: '/privacy',
   info: (slug) => `/info/${slug}`,
+  createRepairRequest: '/repair-requests/new',
 };
 

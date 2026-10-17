@@ -66,3 +66,13 @@ export async function logoutUser() {
   const response = await api.post('/auth/logout');
   return response.data;
 }
+
+
+
+/**
+ * Restore the currently authenticated user from the JWT cookie.
+ */
+export async function getCurrentUser() {
+  const response = await api.get('/auth/me');
+  return response.data;
+}

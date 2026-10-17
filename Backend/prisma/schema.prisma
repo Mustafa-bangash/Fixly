@@ -11,31 +11,31 @@ datasource db {
 }
 
 model User {
-  id                   String   @id @default(uuid())
-  role                 Role
-  fullName             String
-  email                String   @unique
-  phone                String   @unique
-  passwordHash         String
-  isVerified           Boolean  @default(false)
-  profilePhotoUrl      String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id              String   @id @default(uuid())
+  role            Role
+  fullName        String
+  email           String   @unique
+  phone           String   @unique
+  passwordHash    String
+  isVerified      Boolean  @default(false)
+  profilePhotoUrl String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  customerProfile        CustomerProfile?
-  providerProfile        ProviderProfile?
-  repairRequests         RepairRequest[]
-  jobs                   Job[]
-  messages               Message[]
-  conversationsAsCustomer Conversation[] @relation("ConversationCustomer")
-  ratingsGiven           Rating[]
-  repairHistory          RepairHistory[]
-  warrantyClaims         WarrantyClaim[]
-  repeatProblemFlags     RepeatProblemFlag[]
-  maintenanceReminders   MaintenanceReminder[]
-  notifications          Notification[]
-  disputesRaised         Dispute[]
-  otpCodes               OtpCode[]
+  customerProfile         CustomerProfile?
+  providerProfile         ProviderProfile?
+  repairRequests          RepairRequest[]
+  jobs                    Job[]
+  messages                Message[]
+  conversationsAsCustomer Conversation[]        @relation("ConversationCustomer")
+  ratingsGiven            Rating[]
+  repairHistory           RepairHistory[]
+  warrantyClaims          WarrantyClaim[]
+  repeatProblemFlags      RepeatProblemFlag[]
+  maintenanceReminders    MaintenanceReminder[]
+  notifications           Notification[]
+  disputesRaised          Dispute[]
+  otpCodes                OtpCode[]
 }
 
 enum Role {
@@ -79,12 +79,12 @@ model ServiceCategory {
   defaultReminderIntervalMonths Int?
   peakSeasonStartMonth          Int?
 
-  providerSkills                ProviderSkill[]
-  repairRequests                RepairRequest[]
-  repairHistoryEntries          RepairHistory[]
+  providerSkills               ProviderSkill[]
+  repairRequests               RepairRequest[]
+  repairHistoryEntries         RepairHistory[]
   repeatProblemRecommendations RepeatProblemRecommendation[]
-  repeatProblemFlags            RepeatProblemFlag[]
-  maintenanceReminders          MaintenanceReminder[]
+  repeatProblemFlags           RepeatProblemFlag[]
+  maintenanceReminders         MaintenanceReminder[]
 }
 
 model ProviderSkill {
@@ -108,19 +108,19 @@ enum VerificationStatus {
 }
 
 model RepairRequest {
-  id            String        @id @default(uuid())
+  id            String          @id @default(uuid())
   customerId    String
-  customer      User          @relation(fields: [customerId], references: [id])
+  customer      User            @relation(fields: [customerId], references: [id])
   categoryId    String
   category      ServiceCategory @relation(fields: [categoryId], references: [id])
   description   String
-  isComplexJob  Boolean       @default(false)
-  isEmergency   Boolean       @default(false)
+  isComplexJob  Boolean         @default(false)
+  isEmergency   Boolean         @default(false)
   emergencyType EmergencyType?
-  latitude      Float
-  longitude     Float
-  status        RequestStatus @default(OPEN)
-  createdAt     DateTime      @default(now())
+  latitude      Float?
+  longitude     Float?
+  status        RequestStatus   @default(DRAFT)
+  createdAt     DateTime        @default(now())
 
   media         RequestMedia[]
   bids          Bid[]
@@ -128,8 +128,22 @@ model RepairRequest {
   broadcasts    RequestBroadcast[]
   conversations Conversation[]
 
+  // Service location
+  serviceArea     String?
+  detailedAddress String?
+
+  // Draft lifecycle
+  lastActivityAt DateTime  @default(now())
+  submittedAt    DateTime?
+
+  // Bidding schedule
+  biddingDurationMinutes Int?
+  biddingDeadline        DateTime?
+
   @@index([status, categoryId])
   @@index([customerId])
+  @@index([status, lastActivityAt])
+  @@index([status, biddingDeadline])
 }
 
 enum EmergencyType {
@@ -139,6 +153,7 @@ enum EmergencyType {
 }
 
 enum RequestStatus {
+  DRAFT
   OPEN
   BIDDING_CLOSED
   CONFIRMED
@@ -149,6 +164,7 @@ enum RequestStatus {
 
 model RequestMedia {
   id        String        @id @default(uuid())
+  publicId  String?
   requestId String
   request   RepairRequest @relation(fields: [requestId], references: [id])
   mediaType MediaType
@@ -456,16 +472,16 @@ enum DisputeStatus {
 }
 
 model OtpCode {
-  id        String     @id @default(uuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id])
-  codeHash  String
-  channel   OtpChannel
-  purpose   OtpPurpose
-  expiresAt DateTime
-  isUsed    Boolean    @default(false)
-  attemptCount Int @default(0)
-  createdAt DateTime   @default(now())
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  codeHash     String
+  channel      OtpChannel
+  purpose      OtpPurpose
+  expiresAt    DateTime
+  isUsed       Boolean    @default(false)
+  attemptCount Int        @default(0)
+  createdAt    DateTime   @default(now())
 
   @@index([userId, purpose])
 }

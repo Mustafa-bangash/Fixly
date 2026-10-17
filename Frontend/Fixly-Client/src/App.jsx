@@ -24,8 +24,47 @@ import EmergencyPage from './pages/customer/EmergencyPage.jsx';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage.jsx';
 
 import { ROUTES } from './utils/routes.js';
+import { useDispatch } from 'react-redux';
+import {
+  setUser,
+  clearUser,
+  setAuthInitialized,
+} from './store/authSlice.js';
+import { getCurrentUser } from './api/authApi.js';
+import CustomerOnlyRoute from './components/common/CustomerOnlyRoute.jsx';
+import CreateRepairRequestPage from './pages/repair-requests/CreateRepairRequestPage.jsx';
 
 export default function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreAuthentication() {
+      try {
+        const result = await getCurrentUser();
+
+        if (!cancelled) {
+          dispatch(setUser(result.user));
+        }
+      } catch {
+        if (!cancelled) {
+          dispatch(clearUser());
+        }
+      } finally {
+        if (!cancelled) {
+          dispatch(setAuthInitialized(true));
+        }
+      }
+    }
+
+    restoreAuthentication();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch]);
+
   useEffect(() => {
     const handleConnect = () => {
       console.log('Socket connected:', socket.id);
@@ -78,6 +117,14 @@ export default function App() {
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+
+          <Route element={<CustomerOnlyRoute />}>
+            <Route
+              path={ROUTES.createRepairRequest}
+              element={<CreateRepairRequestPage />}
+            />
+          </Route>
+
         </Route>
       </Routes>
     </BrowserRouter>

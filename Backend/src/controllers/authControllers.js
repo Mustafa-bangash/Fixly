@@ -1,7 +1,16 @@
-import {signupUser,loginUser, verifyUserEmail, resendUserVerificationOtp} from "../services/authService.js";
+import {
+  signupUser,
+  loginUser,
+  verifyUserEmail,
+  resendUserVerificationOtp,
+  getCurrentUser,
+} from "../services/authService.js";
 import { validateSignupInput } from "../utils/validators.js";
 import { AUTH_COOKIE_NAME, authCookieOptions } from "../utils/cookieOptions.js";
 import { AppError } from "../utils/apperror.js";
+
+
+
 
 function handleError(res, error) {
   if (error instanceof AppError) {
@@ -138,4 +147,17 @@ export function resendOtpController(expectedRole) {
 export function logout(req, res) {
   res.clearCookie(AUTH_COOKIE_NAME, authCookieOptions());
   return res.status(200).json({ message: "Logged out" });
+}
+
+
+
+
+export async function getCurrentUserController(req, res) {
+  try {
+    const user = await getCurrentUser(req.user.id);
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    return handleError(res, error);
+  }
 }

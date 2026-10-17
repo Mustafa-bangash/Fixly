@@ -1,10 +1,20 @@
+
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/prisma.js";
 import { AUTH_COOKIE_NAME } from "../utils/cookieOptions.js";
 
 export async function requireAuth(req, res, next) {
   try {
-    const token = req.cookies?.[AUTH_COOKIE_NAME];
+    const authorizationHeader = req.headers.authorization;
+
+    const bearerToken = authorizationHeader?.startsWith("Bearer ")
+      ? authorizationHeader.slice(7).trim()
+      : null;
+
+    const cookieToken = req.cookies?.[AUTH_COOKIE_NAME];
+
+    // Support both Bearer-token and cookie authentication.
+    const token = bearerToken || cookieToken;
 
     if (!token || !process.env.JWT_SECRET) {
       return res.status(401).json({

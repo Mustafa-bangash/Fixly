@@ -1,12 +1,19 @@
+
 import express from "express";
 import multer from "multer";
 import upload from "../middleware/uploadMiddleware.js";
 import uploadController from "../controllers/uploadController.js";
+import {
+  requireAuth,
+  requireRole,
+} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.post(
-  "/media",
+  "/:requestId/media",
+  requireAuth,
+  requireRole("CUSTOMER"),
   (req, res, next) => {
     upload.fields([
       { name: "images", maxCount: 10 },
