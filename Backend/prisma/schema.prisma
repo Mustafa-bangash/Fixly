@@ -160,6 +160,7 @@ enum RequestStatus {
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  EXPIRED
 }
 
 model RequestMedia {
@@ -171,6 +172,19 @@ model RequestMedia {
   fileUrl   String
   stage     MediaStage
   createdAt DateTime      @default(now())
+
+  cleanupStatus    MediaCleanupStatus @default(NOT_REQUIRED)
+  cleanupAttempts  Int                @default(0)
+  cleanupLastError String?
+  cleanupRetryAt   DateTime?
+
+  @@index([cleanupStatus, cleanupRetryAt])
+}
+
+enum MediaCleanupStatus {
+  NOT_REQUIRED
+  PENDING
+  FAILED
 }
 
 enum MediaType {

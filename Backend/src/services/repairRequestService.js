@@ -238,6 +238,9 @@ export async function createRepairRequestDraft({
 /**
  * Submit an existing draft and open it for bidding.
  *
+ * Expired drafts cannot be submitted, even if the scheduled cleanup
+ * worker has not run yet.
+ *
  * Submission and deadline persistence happen in one transaction.
  * Repeated submissions of an already-open request are idempotent.
  */
@@ -253,7 +256,12 @@ export async function submitRepairRequest({ userId, requestId }) {
     throw new AppError("Repair request ID is required", 400);
   }
 
-  return prisma.$transaction(async (tx) => {
+  const now = new Date();
+  const expiryCutoff = new Date(
+    now.getTime() - 24 * 60 * 60 * 1000,
+  );
+
+  const result = await prisma.$transaction(async (tx) => {
     const request = await tx.repairRequest.findUnique({
       where: { id: requestId.trim() },
       select: {
@@ -267,6 +275,7 @@ export async function submitRepairRequest({ userId, requestId }) {
         status: true,
         serviceArea: true,
         detailedAddress: true,
+        lastActivityAt: true,
         submittedAt: true,
         biddingDurationMinutes: true,
         biddingDeadline: true,
@@ -284,8 +293,7 @@ export async function submitRepairRequest({ userId, requestId }) {
       );
     }
 
-    // Return the existing result if this request was already submitted.
-    // Do not reset its deadline on a retry.
+    // Repeated submission of an already-open request is idempotent.
     if (
       request.status === "OPEN" &&
       request.submittedAt &&
@@ -293,9 +301,13 @@ export async function submitRepairRequest({ userId, requestId }) {
       request.biddingDeadline
     ) {
       return {
-        ...request,
+        request,
         alreadySubmitted: true,
       };
+    }
+
+    if (request.status === "EXPIRED") {
+      return { expired: true };
     }
 
     if (request.status !== "DRAFT") {
@@ -305,12 +317,55 @@ export async function submitRepairRequest({ userId, requestId }) {
       );
     }
 
+    // Expire stale drafts and schedule their media for cleanup.
+    if (request.lastActivityAt <= expiryCutoff) {
+      const expired = await tx.repairRequest.updateMany({
+        where: {
+          id: request.id,
+          customerId: userId,
+          status: "DRAFT",
+          lastActivityAt: { lte: expiryCutoff },
+        },
+        data: { status: "EXPIRED" },
+      });
+
+      if (expired.count === 1) {
+        await tx.requestMedia.updateMany({
+          where: { requestId: request.id },
+          data: {
+            cleanupStatus: "PENDING",
+            cleanupRetryAt: now,
+            cleanupLastError: null,
+          },
+        });
+
+        return { expired: true };
+      }
+
+      // Another operation changed the request concurrently.
+      const currentRequest = await tx.repairRequest.findUnique({
+        where: { id: request.id },
+        select: { status: true },
+      });
+
+      if (currentRequest?.status === "EXPIRED") {
+        return { expired: true };
+      }
+
+      throw new AppError(
+        "This draft has changed. Refresh the request and try again",
+        409,
+      );
+    }
+
     validateSubmissionFields(request);
 
-    // Validate the media records saved in PostgreSQL, not just
-    // the files previously sent to the upload endpoint.
+    // Only count media that is not scheduled for cleanup.
     const media = await tx.requestMedia.findMany({
-      where: { requestId: request.id },
+      where: {
+        requestId: request.id,
+        cleanupStatus: "NOT_REQUIRED",
+      },
       select: {
         id: true,
         mediaType: true,
@@ -370,13 +425,17 @@ export async function submitRepairRequest({ userId, requestId }) {
       submittedAt.getTime() + durationMinutes * 60 * 1000,
     );
 
-    // Conditional update prevents two requests from both changing
-    // the same draft from DRAFT to OPEN.
-    const result = await tx.repairRequest.updateMany({
+    const submissionCutoff = new Date(
+        Date.now() - 24 * 60 * 60 * 1000,
+    );
+
+    // Require the draft to still be active when submitting.
+    const submission = await tx.repairRequest.updateMany({
       where: {
         id: request.id,
         customerId: userId,
         status: "DRAFT",
+        lastActivityAt: { gt: submissionCutoff },
       },
       data: {
         status: "OPEN",
@@ -387,7 +446,33 @@ export async function submitRepairRequest({ userId, requestId }) {
       },
     });
 
-    if (result.count !== 1) {
+    if (submission.count !== 1) {
+      // The draft may have crossed the expiry cutoff while validating.
+      const expired = await tx.repairRequest.updateMany({
+        where: {
+            id: request.id,
+            customerId: userId,
+            status: "DRAFT",
+            lastActivityAt: {
+                lte: new Date(Date.now() - 24 * 60 * 60 * 1000),
+            },
+        },
+        data: { status: "EXPIRED" },
+      });
+
+      if (expired.count === 1) {
+        await tx.requestMedia.updateMany({
+          where: { requestId: request.id },
+          data: {
+            cleanupStatus: "PENDING",
+            cleanupRetryAt: new Date(),
+            cleanupLastError: null,
+          },
+        });
+
+        return { expired: true };
+      }
+
       throw new AppError(
         "This draft has changed. Refresh the request and try again",
         409,
@@ -414,11 +499,25 @@ export async function submitRepairRequest({ userId, requestId }) {
     });
 
     return {
-      ...submittedRequest,
+      request: submittedRequest,
       alreadySubmitted: false,
     };
   });
+
+  // Throw after the transaction commits, so expiry changes are preserved.
+  if (result.expired) {
+    throw new AppError(
+      "This draft has expired and can no longer be submitted",
+      410,
+    );
+  }
+
+  return {
+    ...result.request,
+    alreadySubmitted: result.alreadySubmitted,
+  };
 }
+
 
 /**
  * Get service categories for the repair request form.

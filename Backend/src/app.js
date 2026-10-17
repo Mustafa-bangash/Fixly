@@ -11,6 +11,8 @@ import { getAccessibleConversation } from "./services/conversationService.js";
 import { sendMessage } from "./services/messageService.js";
 import { AppError } from "./utils/apperror.js";
 import repairRequestRoutes from "./routes/repairRequestRoutes.js";
+import { runDraftCleanup } from "./services/draftCleanupService.js";
+
 const app = express();
 
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
@@ -133,6 +135,42 @@ io.on("connection", (socket) => {
   });
 });
 
+
+let cleanupRunning = false;
+
+async function runScheduledDraftCleanup() {
+  if (cleanupRunning) {
+    return;
+  }
+
+  cleanupRunning = true;
+
+  try {
+    const result = await runDraftCleanup();
+
+    if (result.expiredCount > 0 || result.processedCount > 0) {
+      console.log("Draft cleanup completed", result);
+    }
+  } catch (error) {
+      console.error("Draft cleanup cycle failed", {
+      name: error?.name,
+      code: error?.code,
+      message: String(error?.message || "Unknown error")
+        .replace(/postgres(?:ql)?:\/\/\S+/gi, "[REDACTED]")
+        .replace(/https?:\/\/\S+/gi, "[REDACTED]")
+        .slice(0, 500),
+    });
+  } finally {
+    cleanupRunning = false;
+  }
+}
+
+// Run once at startup, then every five minutes.
+void runScheduledDraftCleanup();
+
+setInterval(() => {
+  void runScheduledDraftCleanup();
+}, 5 * 60 * 1000);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
