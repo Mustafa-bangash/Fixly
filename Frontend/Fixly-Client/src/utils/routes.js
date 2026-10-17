@@ -1,6 +1,12 @@
-// all page addresses are kept here so they are easy to change when the router is added
+// Centralized route paths for Fixly
 export const ROUTES = {
   home: '/',
+  dashboard: '/dashboard',
+  requests: '/requests',
+  messages: '/messages',
+  history: '/history',
+  emergency: '/emergency',
+  profile: '/profile',
   login: '/login',
   signup: '/signup',
   providerSignup: '/provider/signup',
@@ -8,6 +14,9 @@ export const ROUTES = {
   verifyEmail: '/verify-email',
   forgotPassword: '/forgot-password',
   how: '/how-it-works',
+  terms: '/terms',
+  privacy: '/privacy',
   info: (slug) => `/info/${slug}`,
   createRepairRequest: '/repair-requests/new',
 };
+

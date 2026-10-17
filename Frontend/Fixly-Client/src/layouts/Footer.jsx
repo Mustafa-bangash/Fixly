@@ -5,6 +5,8 @@ import { ROUTES } from '../utils/routes.js';
 function linkTo(link) {
   if (link.to === 'how') return ROUTES.how;
   if (link.to === 'services') return '/#services';
+  if (link.slug === 'terms-and-conditions') return ROUTES.terms;
+  if (link.slug === 'privacy-policy') return ROUTES.privacy;
   return ROUTES.info(link.slug);
 }
 
